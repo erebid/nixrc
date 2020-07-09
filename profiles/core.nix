@@ -17,7 +17,7 @@ in {
     kernel.sysctl."kernel.sysrq" = 1;
 
   };
-
+  console.keyMap = "colemak";
   environment = {
 
     systemPackages = with pkgs; [
@@ -132,4 +132,5 @@ in {
 
   users.mutableUsers = false;
 
+  home-manager.useUserPackages = true;
 }

@@ -3,6 +3,7 @@
     discord
     riot-desktop
     signal-desktop
+    kotatogram-desktop
   ];
 }
 

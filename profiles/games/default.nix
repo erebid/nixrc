@@ -4,16 +4,9 @@
     retroarchBare
     steam
     steam-run
-    pcsx2
-    qjoypad
+    multimc
   ];
-
-  services.wii-u-gc-adapter.enable = true;
-
   services.gamemode.enable = true;
-
-  # fps games on laptop need this
-  services.xserver.libinput.disableWhileTyping = false;
 
   # 32-bit support needed for steam
   hardware.opengl.driSupport32Bit = true;

@@ -1,5 +1,5 @@
 { pkgs, ... }: {
-  imports = [ ./zsh ./kakoune ./tmux ];
+  imports = [ ./fish ./emacs ./tmux ./go ];
 
   environment.shellAliases = { v = "$EDITOR"; };
 
@@ -7,8 +7,8 @@
     PAGER = "less";
     LESS = "-iFJMRWX -z-4 -x4";
     LESSOPEN = "|${pkgs.lesspipe}/bin/lesspipe.sh %s";
-    EDITOR = "k";
-    VISUAL = "k";
+    EDITOR = "emacs";
+    VISUAL = "emacs";
   };
 
   environment.systemPackages = with pkgs; [
@@ -18,21 +18,18 @@
     gnupg
     less
     ncdu
-    pass
-    tig
     tokei
     wget
   ];
 
   fonts = {
-    fonts = [ pkgs.dejavu_nerdfont ];
+    fonts = [ pkgs.iosevka ];
     fontconfig.defaultFonts.monospace =
-      [ "DejaVu Sans Mono Nerd Font Complete Mono" ];
+      [ "Iosevka" ];
   };
 
   documentation.dev.enable = true;
 
   programs.thefuck.enable = true;
-  programs.firejail.enable = true;
   programs.mtr.enable = true;
 }

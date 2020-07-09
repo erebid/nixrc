@@ -4,8 +4,9 @@
   inputs.nixpkgs.url = "nixpkgs/release-20.03";
   inputs.unstable.url = "nixpkgs/nixos-unstable";
   inputs.home.url = "github:rycee/home-manager/bqv-flakes";
+  inputs.emacs.url = "github:nix-community/emacs-overlay";
 
-  outputs = inputs@{ self, home, nixpkgs, unstable }:
+  outputs = inputs@{ self, home, emacs, nixpkgs, unstable }:
     let
       inherit (builtins) listToAttrs baseNameOf attrNames attrValues readDir;
       inherit (nixpkgs.lib) removeSuffix;
@@ -26,7 +27,7 @@
       pkgImport = pkgs:
         import pkgs {
           inherit system;
-          overlays = attrValues self.overlays;
+          overlays = (attrValues self.overlays) ++ [ emacs.overlay ];
           config = { allowUnfree = true; };
         };
 
