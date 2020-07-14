@@ -9,7 +9,9 @@
   ];
 
   services.redshift.enable = true;
+
   services.xserver.videoDrivers = [ "nvidia" ];
+  services.xserver.displayManager.gdm.wayland = false;
 
   environment.systemPackages = with pkgs; [ gimp ];
 

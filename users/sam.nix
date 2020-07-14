@@ -38,6 +38,8 @@ in {
     in rec {
       enable = true;
 
+      configFile."alacritty/alacritty.yml".source = ./alacritty.yml;
+
       cacheHome = "${homeDirectory}/.cache";
       configHome = "${homeDirectory}/.config";
       dataHome = "${homeDirectory}/.local/share";

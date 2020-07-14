@@ -15,6 +15,7 @@ in {
         set __fish_git_prompt_show_informative_status 1
 
         # Fish command and parameter colors
+        set fish_color_cwd magenta
         set fish_color_command green
         set fish_color_param $fish_color_normal
 
@@ -96,7 +97,7 @@ in {
                     set suffix '#'
                 case '*'
                     set color_cwd $fish_color_cwd
-                    set suffix '>'
+                    set suffix ""
             end
 
             echo -n -s (fish_emacs_vterm_prompt_hook)

@@ -1,7 +1,7 @@
 { config, pkgs, ... }:
 let inherit (builtins) readFile;
 in {
-  imports = [ ../develop ./bspwm ../networkmanager ../im ];
+  imports = [ ../develop ./gnome ../networkmanager ../im ];
 
   hardware.opengl.enable = true;
   hardware.opengl.driSupport = true;
@@ -39,9 +39,10 @@ in {
     enable = true;
     xkbVariant = "colemak";
     xkbOptions = "altwin:swap_alt_win";    
-    displayManager.defaultSession = "none+bspwm";
-    displayManager.lightdm = {
-      enable = true;
-    };
+    displayManager.gdm.enable = true;
+    # displayManager.defaultSession = "none+bspwm";
+    # displayManager.lightdm = {
+    #   enable = true;
+    # };
   };
 }

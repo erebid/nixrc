@@ -18,8 +18,8 @@ in {
     '';
     programs.gpg.enable = true;
     services.gpg-agent = {
-      defaultCacheTtl = 600;
-      defaultCacheTtlSsh = 0;
+      defaultCacheTtl = 3600;
+      defaultCacheTtlSsh = 3600;
       maxCacheTtl = 7200;
       enableExtraSocket = true;
       enableSshSupport = true;
