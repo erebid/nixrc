@@ -39,26 +39,6 @@ in {
         };
         rebase.abbreviateCommands = true;
 
-        url = {
-          "git://github.com/" = { insteadOf = "github:"; };
-          "git@github.com:" = {
-            insteadOf = "gh:";
-            pushInsteadOf = [ "github:" "git://github.com/" ];
-          };
-
-          "git://gitlab.com/" = { insteadOf = "gitlab:"; };
-          "git@gitlab.com:" = {
-            insteadOf = "gl:";
-            pushInsteadOf = [ "gitlab:" "git://gitlab.com/" ];
-          };
-
-          "git://gist.github.com/" = { insteadOf = "gist:"; };
-          "git@gist.github.com:" = {
-            insteadOf = "gst:";
-            pushInsteadOf = [ "gist:" "git://gist.github.com/" ];
-          };
-        };
-
         format.pretty = "oneline";
         log.decorate = "full";
         diff = {
