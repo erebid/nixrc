@@ -11,6 +11,7 @@ in {
       lab
       git-crypt
       git-secrets
+      gh
     ];
 
     programs.git = {
