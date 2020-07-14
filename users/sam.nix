@@ -39,6 +39,7 @@ in {
       enable = true;
 
       configFile."alacritty/alacritty.yml".source = ./alacritty.yml;
+      configFile."gh/config.yml".text = import ../secrets/gh.nix;
 
       cacheHome = "${homeDirectory}/.cache";
       configHome = "${homeDirectory}/.config";
