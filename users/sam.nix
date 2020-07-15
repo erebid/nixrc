@@ -98,6 +98,20 @@ in {
         videos = "${homeDirectory}/var/videos";
       };
     };
-
+    gtk = {
+      enable = true;
+      theme = {
+        package = pkgs.ant-dracula;
+        name = "Ant-Dracula";
+      };
+      iconTheme = {
+        package = pkgs.zafiro-icons;
+        name = "Zafiro-icons";
+      };
+    };
+    qt = {
+      enable = true;
+      theme = "gtk2";
+    };
   };
 }
