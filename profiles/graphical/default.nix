@@ -25,7 +25,6 @@ in {
       imlib2
       librsvg
       libsForQt5.qtstyleplugins
-      papirus-icon-theme
       zathura
       xsel
     ];
