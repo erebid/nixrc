@@ -16,7 +16,7 @@ in {
       dzen2
       feh
       ffmpeg-full
-      firefox-bin
+      chromium
       qt5.qtgraphicaleffects
       gnome3.adwaita-icon-theme
       gnome3.networkmanagerapplet
