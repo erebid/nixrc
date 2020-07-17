@@ -8,12 +8,16 @@
     ../users/sam.nix
   ];
 
+  programs.dconf.enable = true;
+
   services.redshift.enable = true;
 
   services.xserver.videoDrivers = [ "nvidia" ];
   services.xserver.displayManager.gdm.wayland = false;
 
-  environment.systemPackages = with pkgs; [ gimp ];
+  environment.systemPackages = with pkgs; [ 
+ (pkgs.ffmpeg-full.override { nv-codec-headers = pkgs.nv-codec-headers;})
+gimp (obs-studio.override { ffmpeg = pkgs.ffmpeg-full.override { nv-codec-headers = pkgs.nv-codec-headers;}; }) ];
 
   boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "usbhid" "sd_mod" ];
   boot.initrd.kernelModules = [ "dm-snapshot" ];

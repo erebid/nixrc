@@ -23,9 +23,9 @@
   ];
 
   fonts = {
-    fonts = [ pkgs.iosevka ];
+    fonts = [ pkgs.ibm-plex ];
     fontconfig.defaultFonts.monospace =
-      [ "Iosevka" ];
+      [ "IBM Plex Mono Semibold" ];
   };
 
   documentation.dev.enable = true;

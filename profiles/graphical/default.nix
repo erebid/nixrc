@@ -1,7 +1,7 @@
 { config, pkgs, ... }:
 let inherit (builtins) readFile;
 in {
-  imports = [ ../develop ./gnome ../networkmanager ../im ];
+  imports = [ ../develop ./bspwm ../networkmanager ../im ];
 
   hardware.opengl.enable = true;
   hardware.opengl.driSupport = true;
@@ -26,7 +26,8 @@ in {
       librsvg
       libsForQt5.qtstyleplugins
       zathura
-      xsel
+      xclip
+      mpv
     ];
   };
 
@@ -38,10 +39,10 @@ in {
     enable = true;
     xkbVariant = "colemak";
     xkbOptions = "altwin:swap_alt_win";    
-    displayManager.gdm.enable = true;
-    # displayManager.defaultSession = "none+bspwm";
-    # displayManager.lightdm = {
-    #   enable = true;
-    # };
+    # displayManager.gdm.enable = true;
+    displayManager.defaultSession = "none+bspwm";
+    displayManager.lightdm = {
+      enable = true;
+    };
   };
 }

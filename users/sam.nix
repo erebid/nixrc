@@ -14,12 +14,16 @@ in {
   in {
     imports =
       [ ./shells/fish ./services/gnupg ./utilities/git ./utilities/htop ];
+
     programs.password-store = {
       enable = true;
       package = pkgs.pass.withExtensions (exts: [ exts.pass-otp ]);
     };
 
     home.sessionVariables.PASSWORD_STORE_DIR = "$HOME/.secrets/password-store";
+    home.packages = with pkgs; [ libsForQt5.qtstyleplugins ];
+    home.sessionVariables.QT_QPA_PLATFORMTHEME = "gtk2";
+    home.sessionVariables.NIX_AUTO_RUN = 1;
 
     programs.fish.enable = true;
     programs.git = {
@@ -36,8 +40,8 @@ in {
         y = 10;
       };
       font = {
-        normal = { family = "Iosevka"; };
-        size = 11;
+        normal = { family = "IBM Plex Mono Semibold"; };
+        size = 10;
       };
 
       colors = {
@@ -104,14 +108,14 @@ in {
         package = pkgs.ant-dracula;
         name = "Ant-Dracula";
       };
+      font = {
+        package = pkgs.ibm-plex;
+        name = "IBM Plex Sans 10";
+      };
       iconTheme = {
         package = pkgs.zafiro-icons;
         name = "Zafiro-icons";
       };
-    };
-    qt = {
-      enable = true;
-      theme = "gtk2";
     };
   };
 }

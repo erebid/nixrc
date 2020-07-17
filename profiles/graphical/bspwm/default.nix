@@ -16,6 +16,7 @@ in {
         sed -i '/with_vsync/d' alacritty/src/window.rs
       '';
     }))
+    maim
     rofi
   ];
 }
