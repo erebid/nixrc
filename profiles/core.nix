@@ -27,16 +27,12 @@ in {
       dosfstools
       dnsutils
       whois
-      fd
       git
-      gotop
-      gptfdisk
-      iputils
       manpages
       moreutils
-      ripgrep
       stdmanpages
       utillinux
+      ripgrep
     ];
 
     shellAliases =
