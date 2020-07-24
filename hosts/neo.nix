@@ -16,8 +16,9 @@
   services.xserver.displayManager.gdm.wayland = false;
 
   environment.systemPackages = with pkgs; [ 
+rclone
  (pkgs.ffmpeg-full.override { nv-codec-headers = pkgs.nv-codec-headers;})
-gimp (obs-studio.override { ffmpeg = pkgs.ffmpeg-full.override { nv-codec-headers = pkgs.nv-codec-headers;}; }) ];
+gimp (obs-studio.override { ffmpeg = pkgs.ffmpeg-full.override { nv-codec-headers = pkgs.nv-codec-headers;}; }) obs-linuxbrowser ];
 
   boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "usbhid" "sd_mod" ];
   boot.initrd.kernelModules = [ "dm-snapshot" ];

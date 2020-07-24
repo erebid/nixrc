@@ -23,9 +23,11 @@
   ];
 
   fonts = {
-    fonts = [ pkgs.ibm-plex ];
+    fonts = [ pkgs.inconsolata pkgs.noto-fonts ];
+    fontconfig.defaultFonts.sansSerif = 
+      [ "Noto Sans" ];
     fontconfig.defaultFonts.monospace =
-      [ "IBM Plex Mono Semibold" ];
+      [ "Inconsolata" ];
   };
 
   documentation.dev.enable = true;
