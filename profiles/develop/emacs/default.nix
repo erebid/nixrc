@@ -8,6 +8,7 @@
     libtool
     libvterm
     nixfmt
+    gnutls
   ];
   services.emacs.enable = true;
 }

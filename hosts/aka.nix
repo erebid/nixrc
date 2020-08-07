@@ -8,7 +8,7 @@
     ../profiles/develop/fish
   ];
   networking.firewall.enable = true;
-  networking.firewall.allowedTCPPorts = [ 443 80 ];
+  networking.firewall.allowedTCPPorts = [ 443 80 6667 ];
   networking.firewall.extraCommands = ''
     iptables -A INPUT -s 192.241.145.57 -j DROP
     iptables -A OUTPUT -d 192.241.145.57 -j DROP
@@ -16,8 +16,19 @@
   services.openssh.enable = true;
   programs.dconf.enable = true;
   programs.fuse.userAllowOther = true;
-  security.acme.email = "sam.hernandez.amador@gmail.com";
-  security.acme.acceptTerms = true;
+  security.acme = {
+    email = "sam.hernandez.amador@gmail.com";
+    acceptTerms = true;
+    preliminarySelfsigned = true;
+    certs = {
+      "samhza.com" = {
+        webroot = "/var/lib/acme/acme-challenge/";
+        postRun = "systemctl restart caddy.service";
+        group = "certs";
+        allowKeysForGroup = true;
+      };
+    };
+  };
   users.users.sam.openssh.authorizedKeys.keys = [
     "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCYOBAxJ88ILLN3m+WGUwM0vDWmMIkEFY/J6JVyRR1Brwadd2+BZYF6Alp+XonUY8lGLXafhxjM6dAAsOejbKzrP+NOBM/GeX+uTNfWZ5Y7igSdXC792lGuucaeEuR6ymje6amXPI8GD159o0V6LkBntuHkv2atTzmlSW5dH/WJlHbcfPERIqC6bqKuzcFiM7nVp2p7wsH4J3f3RMEp9FReX8DCPeMoVyXYVQLnMaWGZ1ke9/IUlqyBAMCk+NKiXjE/hQYo9oA4nCT8NNvOSMFQ7GZ/+3M67R3ztCZfYPrqs58Qd2I55+Vq2Ia+ZvO2zwSnWi6FI4GrZvly8zrDRVLZXZMBBPpXxC/hIjyQ+7pUM+6xfYXEnhRy8YsBZgTDsdGzyAyT2PWz4z93TGzxsVhCV0htKd/zbja/Kf8yBoLCgN6q5xox+8L1+aBvDgVihUfPYly+8YlJqO0B03fIgMcO0Oi2T3xf5zW9YVaj/AV35QhegrEoLpachL5YnIX2JiuLV7/xKlS44840Tccc4NmikcHt+Bi/TKYZpqcJXOCUCSezYTu9Bm4HkXGh3j29fu6+xJoA5iWmqurjEfRq2z8kVfa6b22ldo9Mc5mtPxi4hYYHld1P7CSMNHxI+xFSVeM6GMDshOq+dAWX5zON/BNcH74dprkZsjrVyhehygWL4w=="
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJpESPS/+RsHiHCRYU4o37tN+ZDYSDfqNQYFp279Nn7e"
@@ -25,14 +36,18 @@
   services.caddyv2.enable = true;
   services.caddyv2.modSha256 =
     "sha256-A9ElpmLEW8/NKhp/4VgqB7VstJg+NIZ4Qe+ugN32Xac=";
-  services.caddyv2.config = ''
-    erebid.dev {
+  services.caddyv2.config = let 
+    certFile = "${config.security.acme.certs."samhza.com".directory}/fullchain.pem";
+    keyFile = "${config.security.acme.certs."samhza.com".directory}/key.pem";
+  in
+  ''
+    samhza.com {
         encode zstd gzip
         log
 
         handle /* {
           file_server {
-              root /var/www/erebid.dev
+              root /var/www/samhza.com
           }
         }
 
@@ -44,10 +59,20 @@
           }
         }
 
-        tls /var/certs/erebid.dev.cert.pem /var/certs/erebid.dev.key.pem
+        handle /.well-known/acme-challenge/* {
+          file_server {
+            root /var/lib/acme/acme-challenge
+          }
+        }
+
+        tls ${certFile} ${keyFile}
     }
   '';
+  systemd.services.caddy.after = [ "network.target" "acme-selfsigned-samhza.com.service" "acme-selfsigned-irc.samhza.com.service" ];
+  users.groups.certs = {};
+  users.users.caddy.extraGroups = [ "certs" ];
   environment.systemPackages = with pkgs; [ fuse ];
+
   systemd.services.rclone-mount = {
     description = "Encrypted rclone mount";
     after = [ "network-online.target" ];
@@ -66,6 +91,34 @@
       Type = "notify";
       Restart = "always";
       RestartSec = "10s";
+    };
+  };
+
+  systemd.services.soju = {
+    description = "soju, a user-friendly IRC bouncer";
+    after = [ "network-online.target" "fs.target" "acme-samhza.com.service" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "simple";
+      Group = "certs";
+      DynamicUser = true;
+      StateDirectory = "soju";
+      ExecStart =
+        let
+          certFile =
+            "${config.security.acme.certs."samhza.com".directory}/fullchain.pem";
+          keyFile =
+            "${config.security.acme.certs."samhza.com".directory}/key.pem";
+          configText = ''
+            listen ircs://
+            hostname samhza.com
+            tls ${certFile} ${keyFile}
+            log /var/lib/private/soju/logs
+            sql sqlite3 /var/lib/private/soju/soju.db
+          '';
+          configFile = pkgs.writeText "soju.config" configText;
+        in
+        "${pkgs.soju}/bin/soju -config ${configFile}";
     };
   };
 

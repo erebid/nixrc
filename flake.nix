@@ -61,5 +61,7 @@
         profilesAttrs = { profiles = pathsToImportedAttrs profilesList; };
 
       in modulesAttrs // profilesAttrs;
+
+      devShell."${system}" = import ./shell.nix { inherit pkgs; };
     };
 }

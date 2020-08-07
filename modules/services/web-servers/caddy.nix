@@ -85,7 +85,7 @@ in {
 				Group = "caddy";
 				Restart = "on-failure";
 				StartLimitInterval = 86400;
-				StartLimitBurst    = 1;
+			StartLimitBurst    = 1;
 				AmbientCapabilities   = "cap_net_bind_service";
 				CapabilityBoundingSet = "cap_net_bind_service";
 				NoNewPrivileges = true;
