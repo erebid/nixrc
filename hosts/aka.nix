@@ -1,5 +1,8 @@
 { config, lib, pkgs, modulesPath, ... }:
-
+let
+    certFile = u: "${config.security.acme.certs."${u}".directory}/fullchain.pem";
+    keyFile = u: "${config.security.acme.certs."${u}".directory}/key.pem";
+in
 {
   imports = [
     "${modulesPath}/profiles/qemu-guest.nix"
@@ -8,7 +11,8 @@
     ../profiles/develop/fish
   ];
   networking.firewall.enable = true;
-  networking.firewall.allowedTCPPorts = [ 443 80 6667 ];
+  networking.firewall.allowedTCPPorts = [ 443 80 6697 ];
+  networking.firewall.allowedUDPPorts = [ 443 80 6697 ];
   networking.firewall.extraCommands = ''
     iptables -A INPUT -s 192.241.145.57 -j DROP
     iptables -A OUTPUT -d 192.241.145.57 -j DROP
@@ -27,6 +31,14 @@
         group = "certs";
         allowKeysForGroup = true;
       };
+      "irc.samhza.com" = {
+        webroot = "/var/lib/acme/acme-challenge/";
+        postRun = 
+          ''systemctl restart caddy.service &
+            systemctl restart soju.service'';
+        group = "certs";
+        allowKeysForGroup = true;
+      };
     };
   };
   users.users.sam.openssh.authorizedKeys.keys = [
@@ -36,11 +48,16 @@
   services.caddyv2.enable = true;
   services.caddyv2.modSha256 =
     "sha256-A9ElpmLEW8/NKhp/4VgqB7VstJg+NIZ4Qe+ugN32Xac=";
-  services.caddyv2.config = let 
-    certFile = "${config.security.acme.certs."samhza.com".directory}/fullchain.pem";
-    keyFile = "${config.security.acme.certs."samhza.com".directory}/key.pem";
-  in
+  services.caddyv2.config =
   ''
+    (acme) {
+        handle /.well-known/acme-challenge/* {
+          file_server {
+            root /var/lib/acme/acme-challenge
+            browse
+          }
+        }
+    }
     samhza.com {
         encode zstd gzip
         log
@@ -58,14 +75,13 @@
             browse
           }
         }
-
-        handle /.well-known/acme-challenge/* {
-          file_server {
-            root /var/lib/acme/acme-challenge
-          }
-        }
-
-        tls ${certFile} ${keyFile}
+        
+        import acme
+        tls ${certFile "samhza.com"} ${keyFile "samhza.com"}
+    }
+    irc.samhza.com {
+        import acme
+        tls ${certFile "irc.samhza.com"} ${keyFile "irc.samhza.com"}
     }
   '';
   systemd.services.caddy.after = [ "network.target" "acme-selfsigned-samhza.com.service" "acme-selfsigned-irc.samhza.com.service" ];
@@ -96,7 +112,7 @@
 
   systemd.services.soju = {
     description = "soju, a user-friendly IRC bouncer";
-    after = [ "network-online.target" "fs.target" "acme-samhza.com.service" ];
+    after = [ "network-online.target" "fs.target" "acme-irc.samhza.com.service" ];
     wantedBy = [ "multi-user.target" ];
     serviceConfig = {
       Type = "simple";
@@ -105,14 +121,10 @@
       StateDirectory = "soju";
       ExecStart =
         let
-          certFile =
-            "${config.security.acme.certs."samhza.com".directory}/fullchain.pem";
-          keyFile =
-            "${config.security.acme.certs."samhza.com".directory}/key.pem";
           configText = ''
             listen ircs://
-            hostname samhza.com
-            tls ${certFile} ${keyFile}
+            hostname irc.samhza.com
+            tls ${certFile "irc.samhza.com" } ${keyFile "irc.samhza.com"}
             log /var/lib/private/soju/logs
             sql sqlite3 /var/lib/private/soju/soju.db
           '';
