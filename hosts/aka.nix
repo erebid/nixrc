@@ -1,7 +1,10 @@
 { config, lib, pkgs, modulesPath, ... }:
 let
-    certFile = u: "${config.security.acme.certs."${u}".directory}/fullchain.pem";
-    keyFile = u: "${config.security.acme.certs."${u}".directory}/key.pem";
+  certFile = u: "${config.security.acme.certs."${u}".directory}/fullchain.pem";
+  keyFile = u: "${config.security.acme.certs."${u}".directory}/key.pem";
+  hosts = [ "samhza.com" "irc.samhza.com" "bloat.samhza.com" ];
+  signed = map (x: "acme-${x}.service") hosts;
+  selfsigned = map (x: "acme-selfsigned-${x}.service") hosts;
 in
 {
   imports = [
@@ -27,15 +30,26 @@ in
     certs = {
       "samhza.com" = {
         webroot = "/var/lib/acme/acme-challenge/";
-        postRun = "systemctl restart caddy.service";
+        postRun =  ''
+          systemctl restart caddy2.service
+        '';
         group = "certs";
         allowKeysForGroup = true;
       };
       "irc.samhza.com" = {
         webroot = "/var/lib/acme/acme-challenge/";
-        postRun = 
-          ''systemctl restart caddy.service &
-            systemctl restart soju.service'';
+        postRun =  ''
+          systemctl restart caddy2.service
+          systemctl restart soju.service
+        '';
+        group = "certs";
+        allowKeysForGroup = true;
+      };
+      "bloat.samhza.com" = {
+        webroot = "/var/lib/acme/acme-challenge/";
+        postRun =  ''
+          systemctl restart caddy2.service
+        '';
         group = "certs";
         allowKeysForGroup = true;
       };
@@ -45,46 +59,95 @@ in
     "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCYOBAxJ88ILLN3m+WGUwM0vDWmMIkEFY/J6JVyRR1Brwadd2+BZYF6Alp+XonUY8lGLXafhxjM6dAAsOejbKzrP+NOBM/GeX+uTNfWZ5Y7igSdXC792lGuucaeEuR6ymje6amXPI8GD159o0V6LkBntuHkv2atTzmlSW5dH/WJlHbcfPERIqC6bqKuzcFiM7nVp2p7wsH4J3f3RMEp9FReX8DCPeMoVyXYVQLnMaWGZ1ke9/IUlqyBAMCk+NKiXjE/hQYo9oA4nCT8NNvOSMFQ7GZ/+3M67R3ztCZfYPrqs58Qd2I55+Vq2Ia+ZvO2zwSnWi6FI4GrZvly8zrDRVLZXZMBBPpXxC/hIjyQ+7pUM+6xfYXEnhRy8YsBZgTDsdGzyAyT2PWz4z93TGzxsVhCV0htKd/zbja/Kf8yBoLCgN6q5xox+8L1+aBvDgVihUfPYly+8YlJqO0B03fIgMcO0Oi2T3xf5zW9YVaj/AV35QhegrEoLpachL5YnIX2JiuLV7/xKlS44840Tccc4NmikcHt+Bi/TKYZpqcJXOCUCSezYTu9Bm4HkXGh3j29fu6+xJoA5iWmqurjEfRq2z8kVfa6b22ldo9Mc5mtPxi4hYYHld1P7CSMNHxI+xFSVeM6GMDshOq+dAWX5zON/BNcH74dprkZsjrVyhehygWL4w=="
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJpESPS/+RsHiHCRYU4o37tN+ZDYSDfqNQYFp279Nn7e"
   ];
-  services.caddyv2.enable = true;
-  services.caddyv2.modSha256 =
-    "sha256-A9ElpmLEW8/NKhp/4VgqB7VstJg+NIZ4Qe+ugN32Xac=";
-  services.caddyv2.config =
-  ''
-    (acme) {
-        handle /.well-known/acme-challenge/* {
-          file_server {
-            root /var/lib/acme/acme-challenge
-            browse
-          }
-        }
-    }
-    samhza.com {
-        encode zstd gzip
-        log
 
-        handle /* {
-          file_server {
-              root /var/www/samhza.com
-          }
-        }
-
-        handle /pub/* {
-        uri strip_prefix /pub
-          file_server {
-            root /home/sam/public
-            browse
-          }
-        }
-        
-        import acme
-        tls ${certFile "samhza.com"} ${keyFile "samhza.com"}
-    }
-    irc.samhza.com {
-        import acme
-        tls ${certFile "irc.samhza.com"} ${keyFile "irc.samhza.com"}
-    }
-  '';
-  systemd.services.caddy.after = [ "network.target" "acme-selfsigned-samhza.com.service" "acme-selfsigned-irc.samhza.com.service" ];
+  systemd.services.caddy2 =
+    let
+      hosts = [ "samhza.com" "bloat.samhza.com" "irc.samhza.com" ];
+      signed = map (x: "acme-${x}.service") hosts;
+      selfsigned = map (x: "acme-selfsigned-${x}.service") hosts;
+    in
+      {
+        description = "Caddy web server";
+        before = signed;
+        wants = signed ++ selfsigned;
+        after = [ "network-online.target" "fs.target" ] ++ selfsigned;
+        wantedBy = [ "multi-user.target" ];
+        serviceConfig = {
+          DynamicUser = true;
+          Group = "certs";
+          StateDirectory = "caddy";
+          ExecStart =
+            let
+              certFile = name:
+                "${config.security.acme.certs.${name}.directory}/fullchain.pem";
+              keyFile = name:
+                "${config.security.acme.certs.${name}.directory}/key.pem";
+              configText = ''
+              (acme) {
+                handle /.well-known/acme-challenge/* {
+                  file_server {
+                    root /var/lib/acme/acme-challenge
+                  }
+                }
+              }
+              bloat.samhza.com {
+                import acme
+                handle /* {
+                  reverse_proxy 127.0.0.1:8081
+                }
+                tls ${certFile "bloat.samhza.com"} ${keyFile "bloat.samhza.com"}
+              }
+              irc.samhza.com {
+                import acme
+                handle /socket {
+                  reverse_proxy 127.0.0.1:8080
+                }
+                handle /* {
+                  file_server {
+                    root ${builtins.fetchTarball {
+                      url = "https://tadeo.ca/u/gamja.tar.gz";
+                      sha256 = "0xypjx24vh34yhyyq4nca55qwljc733kwrng26n7780xj5lzcgrk";
+                    }}
+                  }
+                }
+                tls ${certFile "irc.samhza.com"} ${keyFile "irc.samhza.com"}
+              }
+              samhza.com {
+                import acme
+                handle /pub/* {
+                  uri strip_prefix /pub
+                  file_server {
+                    root /home/sam/public
+                    browse
+                  }
+                }
+                handle /* {
+                  file_server {
+                    root /srv/samhza.com
+                  }
+                }
+                tls ${certFile "samhza.com"} ${keyFile "samhza.com"}
+              }
+            '';
+              configFile = pkgs.writeText "Caddyfile" configText;
+            in
+              ''
+            ${pkgs.caddy2}/bin/caddy run \
+                --config ${configFile} \
+                --adapter caddyfile
+          '';
+          ExecReload = "${pkgs.caddy2}/bin/caddy reload";
+          ExecStop = "${pkgs.caddy2}/bin/caddy stop";
+          Type = "simple";
+          Restart = "on-failure";
+          AmbientCapabilities = "cap_net_bind_service";
+          CapabilityBoundingSet = "cap_net_bind_service";
+          NoNewPrivileges = true;
+          LimitNPROC = 8192;
+          LimitNOFILE = 1048576;
+          Environment = "HOME=%S/private/caddy";
+        };
+      };
   users.groups.certs = {};
   users.users.caddy.extraGroups = [ "certs" ];
   environment.systemPackages = with pkgs; [ fuse ];
@@ -110,6 +173,34 @@ in
     };
   };
 
+  systemd.services.bloat = {
+    description = "A web client for Mastodon Network";
+    after = [ "network-online.target" "fs.target" "acme-bloat.samhza.com.service" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "simple";
+      Group = "certs";
+      DynamicUser = true;
+      StateDirectory = "bloat";
+      ExecStart =
+        let
+          configText = ''
+            listen_address=127.0.0.1:8081
+            client_website=https://bloat.samhza.com
+            client_name=bloat
+            client_scope=read write follow
+            database_path=/var/lib/private/bloat/database
+            templates_path=${pkgs.bloat.src}/templates
+            static_directory=${pkgs.bloat.src}/static
+            post_formats=PlainText:text/plain,HTML:text/html,Markdown:text/markdown,BBCode:text/bbcode
+            log_file=/var/lib/private/bloat/log
+          '';
+          configFile = pkgs.writeText "bloat.conf" configText;
+        in
+          "${pkgs.bloat}/bin/bloat -f ${configFile}";
+    };
+  };
+
   systemd.services.soju = {
     description = "soju, a user-friendly IRC bouncer";
     after = [ "network-online.target" "fs.target" "acme-irc.samhza.com.service" ];
@@ -123,6 +214,7 @@ in
         let
           configText = ''
             listen ircs://
+            listen ws+insecure://:8080
             hostname irc.samhza.com
             tls ${certFile "irc.samhza.com" } ${keyFile "irc.samhza.com"}
             log /var/lib/private/soju/logs
@@ -130,7 +222,7 @@ in
           '';
           configFile = pkgs.writeText "soju.config" configText;
         in
-        "${pkgs.soju}/bin/soju -config ${configFile}";
+          "${pkgs.soju}/bin/soju -config ${configFile}";
     };
   };
 

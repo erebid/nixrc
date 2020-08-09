@@ -21,6 +21,7 @@ in {
     };
 
     home.sessionVariables.PASSWORD_STORE_DIR = "$HOME/.secrets/password-store";
+    home.sessionVariables.PATH = "$PATH:$HOME/go/bin/";
     home.packages = with pkgs; [ libsForQt5.qtstyleplugins ];
     home.sessionVariables.QT_QPA_PLATFORMTHEME = "gtk2";
     home.sessionVariables.NIX_AUTO_RUN = 1;

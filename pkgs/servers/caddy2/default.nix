@@ -1,5 +1,5 @@
 { stdenv, lib, buildGoModule, plugins ? [],
-  modSha256 ? "sha256-CfLPbtTo7ZenUJ2lNLMn06W7Kk4CIWpDJc2/GXNl1Oo=" }:
+  modSha256 ? "sha256-A9ElpmLEW8/NKhp/4VgqB7VstJg+NIZ4Qe+ugN32Xac=" }:
 
 with lib;
 
