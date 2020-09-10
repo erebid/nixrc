@@ -18,7 +18,7 @@
     gnupg
     less
     ncdu
-    tokei
+    scc
     wget
   ];
 
