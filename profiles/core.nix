@@ -1,4 +1,4 @@
-{ config, lib, pkgs, unstablePkgs, ... }:
+{ config, lib, pkgs, ... }:
 let inherit (lib) fileContents;
 
 in {
@@ -123,8 +123,6 @@ in {
     protectKernelImage = true;
 
   };
-
-  systemd.package = unstablePkgs.systemd;
 
   services.earlyoom.enable = true;
 
