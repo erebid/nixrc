@@ -5,9 +5,6 @@ let
   cfg = config.programs.fish;
 in {
   config = mkIf cfg.enable {
-    home.file.".colordiffrc" = {
-      source = "${pkgs.colordiff}/etc/colordiffrc";
-    };
     programs.fish = {
       promptInit = ''
         set fish_greeting
@@ -114,12 +111,6 @@ in {
       '';
 
       shellAliases = rec {
-        bat = "${pkgs.bat}/bin/bat --terminal-width -5";
-        cat = "${bat}";
-        less = ''${bat} --paging=always --pager "${pkgs.less}/bin/less -RF"'';
-        ls = "${pkgs.exa}/bin/exa";
-        ps = "${pkgs.procs}/bin/procs";
-        diff = "${pkgs.colordiff}/bin/colordiff";
         tmux = "tmux -2"; # Force 256 colors
         jq = "jq -C"; # Force colors
         rg = "rg --color always"; # Force color

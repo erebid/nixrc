@@ -1,8 +1,33 @@
 { config, lib, pkgs, modulesPath, ... }:
 let
+  esammy =
+    pkgs.callPackage
+      ({ stdenv, buildGoModule, fetchgit }:
+        buildGoModule rec {
+          name = "esammy";
+
+          src = pkgs.fetchFromGitHub {
+            owner = "samhza";
+            repo = "esammy";
+            rev = "edf186e21960c2be13f62f1a404e5908533d7793";
+            sha256 = "sha256-sI/SOUmOI8JqkIDUBR11yjNaOZ1F63fiXvKs2BCO98A=";
+            # sha256 = "sha256-A7vM/ySgC8oEbllS8Ad+SfaaFvFE2B/OWHJCkQrW/W0=";
+          };
+
+          buildInputs = with pkgs; [ sqlite libjpeg ];
+
+          vendorSha256 = "sha256-wbUyllxVTchBMfnyvofgBv7vd4cUpuFU7JGciQsKJOc=";
+
+          meta = with stdenv.lib; {
+            description = "discord meme bot";
+            homepage = "https://github.com/samhza/esammy";
+            license = licenses.isc;
+          };
+        }
+      ) { };
   certFile = u: "${config.security.acme.certs."${u}".directory}/fullchain.pem";
   keyFile = u: "${config.security.acme.certs."${u}".directory}/key.pem";
-  hosts = [ "samhza.com" "irc.samhza.com" "bloat.samhza.com" ];
+  hosts = [ "samhza.com" "irc.samhza.com" "bloat.samhza.com" "3005.me" ];
   signed = map (x: "acme-${x}.service") hosts;
   selfsigned = map (x: "acme-selfsigned-${x}.service") hosts;
 in
@@ -15,11 +40,6 @@ in
   ];
   networking.firewall.enable = true;
   networking.firewall.allowedTCPPorts = [ 443 80 6697 ];
-  networking.firewall.allowedUDPPorts = [ 443 80 6697 ];
-  networking.firewall.extraCommands = ''
-    iptables -A INPUT -s 192.241.145.57 -j DROP
-    iptables -A OUTPUT -d 192.241.145.57 -j DROP
-  '';
   services.openssh.enable = true;
   programs.dconf.enable = true;
   programs.fuse.userAllowOther = true;
@@ -53,6 +73,14 @@ in
         group = "certs";
         allowKeysForGroup = true;
       };
+      "3005.me" = {
+        webroot = "/var/lib/acme/acme-challenge/";
+        postRun =  ''
+          systemctl restart caddy2.service
+        '';
+        group = "certs";
+        allowKeysForGroup = true;
+      };
     };
   };
   users.users.sam.openssh.authorizedKeys.keys = [
@@ -62,7 +90,6 @@ in
 
   systemd.services.caddy2 =
     let
-      hosts = [ "samhza.com" "bloat.samhza.com" "irc.samhza.com" ];
       signed = map (x: "acme-${x}.service") hosts;
       selfsigned = map (x: "acme-selfsigned-${x}.service") hosts;
     in
@@ -92,6 +119,7 @@ in
               }
               bloat.samhza.com {
                 import acme
+                encode zstd gzip
                 handle /* {
                   reverse_proxy 127.0.0.1:8081
                 }
@@ -99,6 +127,7 @@ in
               }
               irc.samhza.com {
                 import acme
+                encode zstd gzip
                 handle /socket {
                   reverse_proxy 127.0.0.1:8080
                 }
@@ -114,10 +143,11 @@ in
               }
               samhza.com {
                 import acme
+                encode zstd gzip
                 handle /pub/* {
                   uri strip_prefix /pub
                   file_server {
-                    root /home/sam/public
+                    root /home/sam/mount/public
                     browse
                   }
                 }
@@ -149,21 +179,29 @@ in
         };
       };
   users.groups.certs = {};
-  users.users.caddy.extraGroups = [ "certs" ];
-  environment.systemPackages = with pkgs; [ fuse ];
+  users.groups.web = {};
+  users.users.caddy.extraGroups = [ "certs" "web" ];
 
+  environment.systemPackages = with pkgs; [ fuse ];
+  security.wrappers = {
+    fusermount = {
+      source = "${pkgs.fuse}/bin/fusermount";
+      setuid = true;
+      setgid = false;
+    };
+  };
   systemd.services.rclone-mount = {
     description = "Encrypted rclone mount";
     after = [ "network-online.target" ];
     wantedBy = [ "multi-user.target"];
     serviceConfig = {
-      ExecStart = ''${pkgs.rclone}/bin/rclone mount schoolcrypt:public /home/sam/public \
+      ExecStart = ''${pkgs.rclone}/bin/rclone mount schoolcrypt: /home/sam/mount \
         --dir-cache-time 48h \
         --vfs-cache-max-age 48h \
         --vfs-read-chunk-size 10M \
         --vfs-read-chunk-size-limit 512M \
         --allow-other'';
-      ExecStop= "${config.security.wrapperDir}/fusermount -uz /home/sam/public";
+      ExecStop= "${config.security.wrapperDir}/fusermount -uz /home/sam/mount";
       User = "sam";
       Group = "users";
       Environment = [ "PATH=${config.security.wrapperDir}/:$PATH" ];
@@ -179,7 +217,6 @@ in
     wantedBy = [ "multi-user.target" ];
     serviceConfig = {
       Type = "simple";
-      Group = "certs";
       DynamicUser = true;
       StateDirectory = "bloat";
       ExecStart =
@@ -198,6 +235,19 @@ in
           configFile = pkgs.writeText "bloat.conf" configText;
         in
           "${pkgs.bloat}/bin/bloat -f ${configFile}";
+    };
+  };
+
+  systemd.services.esammy = {
+    description = "discord meme bot";
+    after = [ "network-online.target" "fs.target" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "simple";
+      DynamicUser = true;
+      StateDirectory = "esammy";
+      Environment = ["BOT_TOKEN=${import ../secrets/esammy.token.nix}" "PATH=${pkgs.ffmpeg-full}/bin:$PATH"];
+      ExecStart = "${esammy}/bin/esammy";
     };
   };
 
@@ -226,14 +276,8 @@ in
     };
   };
 
+
   time.timeZone = "America/New_York";
-  security.wrappers = {
-    fusermount = {
-      source = "${pkgs.fuse}/bin/fusermount";
-      setuid = true;
-      setgid = false;
-    };
-  };
   boot.loader.grub.enable = true;
   boot.loader.grub.version = 2;
   boot.loader.grub.device = "/dev/vda";

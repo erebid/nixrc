@@ -1,12 +1,16 @@
-{ config, lib, pkgs, ... }: {
+{ config, lib, pkgs, unstablePkgs, ... }: 
+{
   imports = [
     ../profiles/games
     ../profiles/graphical
     ../profiles/networkmanager
+    ../profiles/virt
     ../secrets/location.nix
     ../users/root.nix
     ../users/sam.nix
   ];
+
+  users.users.sam.extraGroups = [ "libvirtd" ];
 
   programs.dconf.enable = true;
 
@@ -15,10 +19,15 @@
   services.xserver.videoDrivers = [ "nvidia" ];
   services.xserver.displayManager.gdm.wayland = false;
 
+  nixpkgs.config.chromium.enablePepperFlash = true;
+
   environment.systemPackages = with pkgs; [ 
+mercurial
+plan9port
 rclone
+python38Packages.youtube-dl
  (pkgs.ffmpeg-full.override { nv-codec-headers = pkgs.nv-codec-headers;})
-gimp (obs-studio.override { ffmpeg = pkgs.ffmpeg-full.override { nv-codec-headers = pkgs.nv-codec-headers;}; }) obs-linuxbrowser ];
+gimp (obs-studio.override { ffmpeg = pkgs.ffmpeg-full.override { nv-codec-headers = pkgs.nv-codec-headers;}; }) obs-linuxbrowser lutris ];
 
   boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "usbhid" "sd_mod" ];
   boot.initrd.kernelModules = [ "dm-snapshot" ];
@@ -30,6 +39,9 @@ gimp (obs-studio.override { ffmpeg = pkgs.ffmpeg-full.override { nv-codec-header
   networking.useDHCP = false;
 
   hardware.enableRedistributableFirmware = true;
+
+  hardware.bluetooth.enable = true;
+  services.blueman.enable = true;
 
   boot.initrd.luks.devices = {
     root = {

@@ -116,8 +116,8 @@ in {
         name = "Noto Sans 11";
       };
       iconTheme = {
-        package = pkgs.zafiro-icons;
-        name = "Zafiro-icons";
+        package = pkgs.papirus-icon-theme;
+        name = "Papirus-Dark";
       };
     };
   };

@@ -32,6 +32,5 @@
 
   documentation.dev.enable = true;
 
-  programs.thefuck.enable = true;
   programs.mtr.enable = true;
 }
