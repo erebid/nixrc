@@ -1,5 +1,28 @@
-{ config, lib, pkgs, unstablePkgs, ... }: 
-{
+{ config, lib, pkgs, unstablePkgs, ... }:
+let
+  dzdown =
+    pkgs.callPackage
+      ({ stdenv, buildGoModule, fetchgit }:
+        buildGoModule rec {
+          name = "dzdown";
+
+          src = pkgs.fetchFromGitHub {
+            owner = "samhza";
+            repo = "dzdown";
+            rev = "c883286458db79cf2a46a703b7cdc3ad736da35a";
+            sha256 = "sha256-+/FQAUcitCP5Uk0DZTK7Q2SdB1mMSL2krbZbD6w9K7A=";
+          };
+
+          vendorSha256 = "sha256-K/f/g4KsqAbkadY/s9NBfeGF0u5H2rZiSRJDBDSNLrE=";
+
+          meta = with stdenv.lib; {
+            description = "deezer music downloader";
+            homepage = "https://github.com/samhza/dzdown";
+            license = licenses.isc;
+          };
+        }
+      ) { };
+in {
   imports = [
     ../profiles/games
     ../profiles/graphical
@@ -21,13 +44,20 @@
 
   nixpkgs.config.chromium.enablePepperFlash = true;
 
-  environment.systemPackages = with pkgs; [ 
-mercurial
-plan9port
-rclone
-python38Packages.youtube-dl
- (pkgs.ffmpeg-full.override { nv-codec-headers = pkgs.nv-codec-headers;})
-gimp (obs-studio.override { ffmpeg = pkgs.ffmpeg-full.override { nv-codec-headers = pkgs.nv-codec-headers;}; }) obs-linuxbrowser lutris ];
+  environment.systemPackages = with pkgs; [
+    mercurial
+    plan9port
+    rclone
+    python38Packages.youtube-dl
+    (pkgs.ffmpeg-full.override { nv-codec-headers = pkgs.nv-codec-headers; })
+    gimp
+    (obs-studio.override {
+      ffmpeg =
+        pkgs.ffmpeg-full.override { nv-codec-headers = pkgs.nv-codec-headers; };
+    })
+    obs-linuxbrowser
+    lutris
+  ];
 
   boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "usbhid" "sd_mod" ];
   boot.initrd.kernelModules = [ "dm-snapshot" ];
@@ -42,6 +72,68 @@ gimp (obs-studio.override { ffmpeg = pkgs.ffmpeg-full.override { nv-codec-header
 
   hardware.bluetooth.enable = true;
   services.blueman.enable = true;
+
+  services.syncthing = {
+    enable = true;
+    openDefaultPorts = true;
+    user = "sam";
+    group = "users";
+    package = unstablePkgs.syncthing;
+    configDir = "/home/sam/.config/syncthing";
+    dataDir = "/home/sam/.local/share/syncthing";
+    declarative = {
+      devices = {
+        lg.id =
+          "S2K26DL-HUAD6FE-55EEZEZ-PH6IBRF-MYJ24KE-6VKUKH4-SITFX3Y-N5TTCQW";
+      };
+      folders = {
+        music = rec {
+          devices = [ "lg" ];
+          path = "/home/sam/var/music";
+          watch = true;
+          rescanInterval = 3600;
+          type = "sendreceive";
+          enable = true;
+        };
+      };
+    };
+  };
+
+  systemd = {
+    timers.dzdown = {
+      wantedBy = [ "timers.target" ];
+      partOf = [ "dzdown.service" ];
+      timerConfig.OnCalendar = "daily";
+    };
+    services.dzdown = {
+      serviceConfig = {
+        Type = "oneshot";
+        User = "sam";
+        Group = "users";
+      };
+      after = [ "network-online.target" "fs.target" ];
+      script = ''
+        cd /home/sam/var/music
+        ${dzdown}/bin/dzdown -art-size 800 -arl ${import ../secrets/deezer.arl.nix} $(</home/sam/var/music/list)
+      '';
+    };
+  };
+
+    services.postgresql = {
+        enable = true;
+        enableTCPIP = false;
+        ensureDatabases = ["facechat"];
+        ensureUsers = [{
+            name = "sam";
+            ensurePermissions = {
+                "DATABASE facechat" = "ALL PRIVILEGES";
+            };
+        }];
+        initialScript = pkgs.writeText "init.sql" ''
+            CREATE USER sam;
+            ALTER  USER sam WITH SUPERUSER;
+        '';
+    };
 
   boot.initrd.luks.devices = {
     root = {
