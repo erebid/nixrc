@@ -9,14 +9,11 @@ let
           src = pkgs.fetchFromGitHub {
             owner = "samhza";
             repo = "esammy";
-            rev = "edf186e21960c2be13f62f1a404e5908533d7793";
-            sha256 = "sha256-sI/SOUmOI8JqkIDUBR11yjNaOZ1F63fiXvKs2BCO98A=";
-            # sha256 = "sha256-A7vM/ySgC8oEbllS8Ad+SfaaFvFE2B/OWHJCkQrW/W0=";
+            rev = "68b6bdb25f79a43f98b4511132e006a704e6c8e2";
+            sha256 = "sha256-0sH3oNCgoq61HF91ubz26J3U8aU8yTxtMPxEjg0ZJAc=";
           };
 
-          buildInputs = with pkgs; [ sqlite libjpeg ];
-
-          vendorSha256 = "sha256-wbUyllxVTchBMfnyvofgBv7vd4cUpuFU7JGciQsKJOc=";
+          vendorSha256 = "sha256-6xcDl98FTbfKuh8xbLKhA+Bc8ndducAGLV+3nPbaTWE=";
 
           meta = with stdenv.lib; {
             description = "discord meme bot";
