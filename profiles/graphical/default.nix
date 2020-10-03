@@ -9,7 +9,7 @@ in {
 
   environment = {
     systemPackages = with pkgs; [
-      emacs
+      xdotool
       pulsemixer
       adapta-gtk-theme
       cursor

@@ -1,7 +1,8 @@
 { pkgs, ... }: {
   environment.systemPackages = with pkgs; [
-    (emacsUnstable.override { withGTK2 = false; withGTK3 = false; }) # Emacs 27
+    emacsUnstable
     # with Lucid
+    mu
     gnumake
     gcc
     cmake
@@ -10,5 +11,4 @@
     nixfmt
     gnutls
   ];
-  services.emacs.enable = true;
 }

@@ -20,22 +20,28 @@ in {
       package = pkgs.pass.withExtensions (exts: [ exts.pass-otp ]);
     };
 
-    home.sessionVariables.PASSWORD_STORE_DIR = "$HOME/.secrets/password-store";
+    home.sessionVariables.PASSWORD_STORE_DIR = "$HOME/secrets/password-store";
     home.sessionVariables.PATH = "$PATH:$HOME/go/bin/";
     home.packages = with pkgs; [ libsForQt5.qtstyleplugins ];
     home.sessionVariables.QT_QPA_PLATFORMTHEME = "gtk2";
     home.sessionVariables.NIX_AUTO_RUN = 1;
 
+    programs.mbsync.enable = true;
+    programs.msmtp.enable = true;
     programs.fish.enable = true;
     programs.git = {
       enable = true;
       signing.key = "4AF549A5EA2C4132";
       userEmail = email;
       userName = name;
+      extraConfig = {
+        sendmail = {
+          smtpserver = "msmtp";
+        };
+      };
     };
     programs.htop.enable = true;
-    programs.alacritty = lib.mkIf config.services.xserver.enable {
-      enable = true;
+    programs.alacritty = {
       settings = {
         window.padding = {
           x = 10;
@@ -80,7 +86,6 @@ in {
     };
 
     services.gpg-agent = {
-      enable = true;
       sshKeys = [ "06330E9E3B7AA150A9B53141325D021A4B20C270" ];
     };
     xdg = let inherit (home-config.home) homeDirectory;
@@ -106,7 +111,6 @@ in {
       };
     };
     gtk = {
-      enable = true;
       theme = {
         package = pkgs.ant-dracula;
         name = "Ant-Dracula";

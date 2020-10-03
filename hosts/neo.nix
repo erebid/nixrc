@@ -33,6 +33,13 @@ in {
     ../users/sam.nix
   ];
 
+  home-manager.users.sam = {
+    imports = [ ../profiles/misc/email.nix ../profiles/misc/mpd.nix ];
+    programs.alacritty.enable = true;
+    services.gpg-agent.enable = true;
+    gtk.enable = true;
+  };
+
   users.users.sam.extraGroups = [ "libvirtd" ];
 
   programs.dconf.enable = true;
@@ -45,6 +52,9 @@ in {
   nixpkgs.config.chromium.enablePepperFlash = true;
 
   environment.systemPackages = with pkgs; [
+    (texlive.combine {
+      inherit (texlive) scheme-small wrapfig capt-of;
+    })
     mercurial
     plan9port
     rclone
@@ -57,7 +67,7 @@ in {
     })
     obs-linuxbrowser
     lutris
-  ];
+  ] ++ [ unstablePkgs.plex-media-player ];
 
   boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "usbhid" "sd_mod" ];
   boot.initrd.kernelModules = [ "dm-snapshot" ];
@@ -118,22 +128,6 @@ in {
       '';
     };
   };
-
-    services.postgresql = {
-        enable = true;
-        enableTCPIP = false;
-        ensureDatabases = ["facechat"];
-        ensureUsers = [{
-            name = "sam";
-            ensurePermissions = {
-                "DATABASE facechat" = "ALL PRIVILEGES";
-            };
-        }];
-        initialScript = pkgs.writeText "init.sql" ''
-            CREATE USER sam;
-            ALTER  USER sam WITH SUPERUSER;
-        '';
-    };
 
   boot.initrd.luks.devices = {
     root = {
