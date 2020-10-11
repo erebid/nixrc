@@ -1,4 +1,1 @@
-# nixrc
-Highly structured NixOS configuration database.
-
-Based on [nixflk](https://github.com/nrdxp/nixflk)
+Moved to [git.sr.ht/~samhza/nixrc](https://git.sr.ht/~samhza/nixrc)
